@@ -1,0 +1,222 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Balls</title>
+
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			width: 100%;
+			background: #000;
+		}
+	</style>
+
+	<script src="box2d.js"></script>
+	<script src="boxbox.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/hammer.js/1.0.5/hammer.min.js"></script>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body id="body">
+	<canvas id="canvas"></canvas>
+	<script>
+		// $(function() {
+			var b2Vec2 = Box2D.Common.Math.b2Vec2,
+				b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef;
+
+			$('canvas').attr('width', $(window).width()).attr('height', $(window).height());
+			var height = $('canvas').height(),
+				width = $('canvas').width();
+
+			var scale = 10;
+
+			var circleTemplate = {
+				shape: 'circle',
+				radius: 5,
+				color: "#000",
+				borderColor: "#fff"
+			}
+
+			var wallTemplate = {
+				type: 'static',
+				color: '#222',
+				borderColor: 'none'
+			}
+
+			console.log(width + ' ' + height)
+
+			var canvasElem = document.getElementById("canvas");
+			var world = boxbox.createWorld(canvasElem, {
+				gravity: {x: 0, y: 40},
+				scale: scale
+			});
+
+			for (var i = 0; i < 10; i++) {
+				world.createEntity(circleTemplate, {
+					x: Math.random()*width/scale,
+					y: Math.random()*height/scale
+				})
+			}
+
+			var floor = world.createEntity(wallTemplate, {
+				x: 0,
+				y: height/scale,
+				width: width,
+				height: 1,
+			})
+
+			var roof = world.createEntity(wallTemplate, {
+				x: 0,
+				y: 0,
+				width: width,
+				height: 1,
+			})
+
+			var left_wall = world.createEntity(wallTemplate, {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: height,
+			})
+
+			var right_wall = world.createEntity(wallTemplate, {
+				x: width/scale,
+				y: 0,
+				width: 1,
+				height: height,
+			})
+
+			Hammer(canvasElem).on('tap', touchStart)
+			Hammer(canvasElem).on('touchend', touchEnd)
+			Hammer(canvasElem).on('touchmove', touchMove)
+
+			var joints = {};
+
+			function touchStart(event) {
+
+				var allTouches = event.touches;
+
+				var touched = {};
+
+				$(allTouches).each(function(k, v) {
+					var touch = $(this)[0],
+						id    = touch.identifier;
+
+					var x = touch.clientX / scale,
+						y = touch.clientY / scale;
+
+
+					var entity = world.find(x,y);
+
+					if (entity.length > 0) {
+						entity = entity[0];
+
+						joints[id] = world.createJoint(right_wall, entity, {
+							type: 'mouse',
+							x: x,
+							y: y,
+							maxForce: entity._body.GetMass() * 300000
+						})
+
+						joints[id].SetTarget(new b2Vec2(x,y))
+					} else {
+						world.createEntity(circleTemplate, {
+							x: x,
+							y: y
+						})
+					}
+				})
+			}
+
+			function touchEnd(event) {
+				var allTouches = event.touches;
+
+				console.log(joints)
+
+				for (var key in joints) {
+					var touchExists = false;
+					for (var tKey in allTouches) {
+						if (allTouches[tKey].identifier == key) touchExists = true;
+					}
+
+					if (!touchExists) {
+						world._world.DestroyJoint(joints[key])
+						// joints[key] = null;
+					}
+				}
+
+					// world._world.DestroyJoint(joints[id])
+
+					// joints[id] = null;
+				// })
+			}
+
+			function touchMove(event) {
+				event.preventDefault();
+
+
+				var allTouches = event.touches;
+
+				var touched = {};
+
+				$(allTouches).each(function(k, v) {
+					var touch = $(this)[0],
+						id    = touch.identifier;
+
+					var x = touch.clientX / scale,
+						y = touch.clientY / scale;
+
+
+					if (!joints[id]) {
+
+						addJoint(x,y,id);
+					}
+
+
+					if (joints[id]) joints[id].SetTarget(new b2Vec2(x,y))
+				})
+
+
+			}
+
+			function addJoint(x, y, k) {
+				var entity = world.find(x,y);
+
+					if (entity.length > 0) {
+						entity = entity[0];
+
+						joints[k] = world.createJoint(right_wall, entity, {
+							type: 'mouse',
+							x: x,
+							y: y,
+							maxForce: entity._body.GetMass() * 300000
+						})
+
+						joints[k].SetTarget(new b2Vec2(x,y))
+					}
+			}
+
+			// setTimeout(function() {
+			// 	world.gravity(20, 30)
+			// }, 2000)
+
+			// world.gravity(20, 30)
+
+				window.ondevicemotion = function(event) {  
+				    var accelerationX = event.accelerationIncludingGravity.x;  
+				    var accelerationY = event.accelerationIncludingGravity.y;  
+				    var accelerationZ = event.accelerationIncludingGravity.z;
+
+				    world.gravity(accelerationY * -10, accelerationX * -10)
+				}
+			
+
+
+		// })
+	</script>
+</body>
+</html>
