@@ -32,7 +32,8 @@
 			var height = $('canvas').height(),
 				width = $('canvas').width();
 
-			var scale = 10;
+			var scale = 10,
+				numBalls = Math.ceil(width * height / 100000);
 
 			var circleTemplate = {
 				shape: 'circle',
@@ -55,7 +56,7 @@
 				scale: scale
 			});
 
-			for (var i = 0; i < 10; i++) {
+			for (var i = 0; i < numBalls; i++) {
 				world.createEntity(circleTemplate, {
 					x: Math.random()*width/scale,
 					y: Math.random()*height/scale
